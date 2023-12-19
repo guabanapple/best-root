@@ -10,13 +10,18 @@ questions = [
     "出発日時を入力してください（yyyy/mm/dd hh:mm または now）",
     "有料・高速道路を経路に含めますか？（Y/N）",
 ]
+# APIキーをセット
 try:
     API_KEY = os.environ["MAPS_API_KEY"]
 except KeyError as k:
     print(k)
 
+# departure_time入力時の指定フォーマット
+T_FORMAT = "%Y/%m/%d %H:%"
 
-def drop_delimiter(txt):
+
+def drop_delimiter(txt: str) -> str:
+    """入力値から句読点を除去"""
     translate_dict = {"、": " ", ",": " "}
     trans_table = txt.maketrans(translate_dict)
     txt = txt.translate(trans_table)
@@ -24,22 +29,14 @@ def drop_delimiter(txt):
 
 
 def get_unit_time(str_time: str) -> int:
+    """departure_timeの入力値に応じてUNIX時間を出力"""
     if str_time == "now":
         return int(datetime.datetime.now().timestamp())
-    return int(datetime.datetime.strptime(str_time, "%Y/%m/%d %H:%M").timestamp())
+    return int(datetime.datetime.strptime(str_time, T_FORMAT).timestamp())
 
 
-def is_valid_input(user_input, key):
-    """Check user_input is valid.
-
-    Args:
-        user_input (str): input by user
-        key (str): key of inputs(dict)
-
-    Returns:
-        bool: return True if input is invalid.
-
-    """
+def is_valid_input(user_input: str, key: str) -> bool:
+    """Check user_input is valid"""
     if user_input.isspace() or len(user_input) == 0:
         print("入力が無効です。再度入力してください。")
         return True
@@ -54,7 +51,7 @@ def is_valid_input(user_input, key):
         try:
             get_unit_time(user_input)
         except ValueError:
-            # フォーマットできない値が含まれるか（例：13月32日）
+            # フォーマットできない値が含まれる（例：13月32日）
             print("日時が正常値ではありませんでした。再度やり直してください。")
             return True
 
@@ -64,7 +61,7 @@ def is_valid_input(user_input, key):
 
 
 #  入力値を取得
-def get_inputs():
+def get_inputs() -> None:
     for i, key in enumerate(inputs):
         user_input = input(questions[i])
         while is_valid_input(user_input, key):
@@ -78,15 +75,13 @@ def get_inputs():
             inputs[key] = user_input
 
 
-def get_root(url, root_type):
+def get_root(url: str, root_type: str) -> str:
     """MAP APIから結果を取得
-
     もしルートが見つからない場合は、強制終了
 
     Args:
         url (str): root_typeによって異なる
         root_type (str): 'optimize' or 'via'
-
     Returns:
         distance(str): 経由地を経て origin から destination までの距離
         duration(str): 〃 の所要時間
@@ -109,7 +104,7 @@ def get_root(url, root_type):
         return distance, duration
 
 
-def get_url(root_type, order=None):
+def get_url(root_type: str, order=None) -> str:
     avoid = "&avoid=tolls|highways" if inputs["avoid"] == "N" else ""
     if root_type == "optimize":
         waypoints = ""
